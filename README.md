@@ -26,16 +26,7 @@ The procedure to reproduce figures and tables of the study:
 
 4.  Place the exported data to folder `data`in this project.
 
-5.  Knitr the document `1_manuscript_extended_data_supplement.qmd` to produce the manuscript in docx-format
-
-6.  Use Word to finalize the document
-
-    -   Stylise the front page.
-    -   Check references.
-    -   Replace "€€" with " " (two spacebars) to create indention to tables, as controlloing flextable indentions in docx output was difficult.
-    -   Check figure sizes.
-    -   Remove duplicate tables from the supplement filem as cross refence did not fuction correctly without them.
-    -   Manually create table of contest for the supplementary file.
+5.  Knitr the document `1_tables_figures.qmd` to produce tables and figures
 
 
 Regarding the interactive online material at <https://mentalnet.shinyapps.io/lifetime/>, see <https://github.com/kmmsks/ci_interactive>
