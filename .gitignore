@@ -10,6 +10,9 @@ nature.csl
 1_tables_figures.html
 1_tables_figures_files
 
+data
+data_processed
+
 # History files
 .Rhistory
 .Rapp.history
