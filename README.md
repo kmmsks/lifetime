@@ -18,7 +18,7 @@ The procedure to reproduce figures and tables of the study:
     
 2.  In the Fiona environment, run the scripts from the folder `R_in_fiona`:
 
-    -   
+    -   `00_cumulative_incidence_incidence_rates.R`
 
     -   `00_service_utilization_in_fiona_environmet.R`
 
