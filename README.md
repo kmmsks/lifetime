@@ -1,8 +1,6 @@
-# lifetime
+# Lifetime incidence and age of onset of mental disorders, and 12-month service utilization in primary and secondary care: a Finnish nationwide registry study
 
-Analysis code for manuscript:
-
-**Lifetime incidence and age of onset of mental disorders, and 12-month service utilization in primary and secondary care: a Finnish nationwide registry study**
+Analysis code for a manuscript.
 
 Authors: Kimmo Suokas, Ripsa Niemi, Mai Gutvilig, John J. McGrath, Kaisla Komulainen, Jaana Suvisaari, Marko Elovainio, Sonja Lumme, Sami Pirkola, Christian Hakulinen
 
