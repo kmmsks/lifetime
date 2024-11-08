@@ -13,6 +13,8 @@ nature.csl
 data
 data_processed
 
+figs
+
 # History files
 .Rhistory
 .Rapp.history
