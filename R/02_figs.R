@@ -189,9 +189,9 @@ fig_compare_dgs$ir <- (draw_compare_dgs_part(fig_dat_mr$ir, sukup_in = 2, ymax_i
 
 # SAVE figures -----------------------------------------------------------------
 
-# ((fig_mr$a+fig_mr$b) /(fig_mr$c+fig_mr$d) / (fig_mr$e+fig_mr$f) +  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')) %>% 
-#   ggsave(here("submissions", "fig1.pdf"), plot = ., device = "pdf", dpi = 600, width = 9.1, height = 8)
-# 
-# fig_dgs$part1 %>% ggsave(here("submissions", "fig2.pdf"), plot = ., device = "pdf", dpi = 600, width = 9.1, height = 8)
-# fig_dgs$part2 %>% ggsave(here("submissions", "fig3.pdf"), plot = ., device = "pdf", dpi = 600, width = 9.1, height = 8)
-# fig_dgs$part3 %>% ggsave(here("submissions", "fig4.pdf"), plot = ., device = "pdf", dpi = 600, width = 9.1, height = 8)
+((fig_mr$a+fig_mr$b) /(fig_mr$c+fig_mr$d) / (fig_mr$e+fig_mr$f) +  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')) %>%
+  ggsave(here("figs", "fig1.pdf"), plot = ., device = "pdf", dpi = 600, width = 9.1, height = 8)
+
+fig_dgs$part1 %>% ggsave(here("figs", "fig2.pdf"), plot = ., device = "pdf", dpi = 600, width = 9.1, height = 8)
+fig_dgs$part2 %>% ggsave(here("figs", "fig3.pdf"), plot = ., device = "pdf", dpi = 600, width = 9.1, height = 8)
+fig_dgs$part3 %>% ggsave(here("figs", "fig4.pdf"), plot = ., device = "pdf", dpi = 600, width = 9.1, height = 8)
