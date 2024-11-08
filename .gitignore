@@ -1,3 +1,15 @@
+*.docx
+
+
+*.qmd
+!1_tables_figures.qmd
+
+references.bib
+nature.csl
+
+1_tables_figures.html
+1_tables_figures_files
+
 # History files
 .Rhistory
 .Rapp.history

@@ -1,0 +1,466 @@
+---
+title: "Lifetime incidence and age of onset of mental disorders, and 12-month service utilization in primary and secondary care: a Finnish nationwide registry study"
+execute:
+  echo: false
+  warning: false
+crossref:
+  fig-prefix: Fig.
+  ref-hyperlink: false
+  custom:
+    - kind: float
+      reference-prefix: Supplementary Table
+      key: supptbl
+      space-before-numbering: true
+    - kind: float
+      reference-prefix: Supplementary Fig.
+      key: suppfig
+      space-before-numbering: true
+    - kind: float
+      reference-prefix: Extended Data Table
+      key: exttbl
+      space-before-numbering: true
+    - kind: float
+      reference-prefix: Extended Data Fig.
+      key: extfig
+      space-before-numbering: true
+fig-dpi: 600
+tbl-cap-location: top
+editor: 
+  markdown: 
+    wrap: 72
+format: html
+filters:
+  - docx-landscape.lua
+---
+
+```{r}
+library(here)
+
+# libraries, helper functions, ggplot theme, figure labels, diagnosis names: 
+source(here("0_settings.R"), encoding = "UTF-8")
+
+# read and process exported results from the Statistics Finland's closed analysis environment:
+source(here("R", "01_read_process_data.R"), encoding = "UTF-8")
+# draw figures:
+source(here("R", "02_figs.R"), encoding = "UTF-8")
+# draw supplementary figure:
+source(here("R", "03_figs_washout.R"))
+
+```
+
+
+```{r}
+
+
+make_tbl_cidg_data <- function(sample_in = "all", dgs_in = dgs_tbl[sub_chapter == T | dg %in% c("first", "first_no_f0"), dg]){
+  dat <- tbl_cidg[sample == sample_in & dg %in% dgs_in] 
+  
+  diff <- dat[age == 100] %>% dcast(dg~sukup+age+sample, value.var = "est") %>%
+  .[, w_to_m := get(paste0("Women_100_", sample_in)) / get(paste0("Men_100_", sample_in))]
+
+  dat[, dg := factor(dg, levels = dgs_in)]
+
+  dat <- rbindlist(
+    list(
+      dat,
+      median_aoo[dg %in% dgs_in & sample == sample_in, .(sukup = factor(sukup, levels = c(2, 1), labels =  c("Women", "Men")), age = 101, sample, value, dg)]
+      ),
+    fill = T
+  )
+  
+  dat %<>% dcast(dg~sukup+age+sample, value.var = "value") 
+
+  dat <- dat[diff, on = "dg", w_to_m := i.w_to_m %>% numb(n_decim = 2)]
+
+  dat %<>% 
+  .[dg %in% dgs_in] %>%
+  .[dgs_tbl, on = "dg", dg := i.labs] %>% 
+  .[dg %in% dgs_tbl[subgr == T, labs], dg := paste0("€€", dg)] 
+  
+  setnames(dat, old = names(dat), new = names(dat) %>% str_remove(paste0("_", sample_in)))
+
+  dat %<>% .[, !c("Women_80", "Men_80")] 
+  dat[]
+  
+  # FILL NA 
+  cols <- names(dat) %>%  setdiff("dg")
+  dat[, (cols) := replace(.SD, is.na(.SD), "NA"), .SDcols = cols]
+  
+}
+
+```
+
+
+::: landscape
+## Tables
+
+### @tbl-cidg: Cumulative incidence of mental disorders at the ages of 25, 50, 75, and 100 years, and median age of onset (AOO) and interquartile range (IQR) by gender and ICD–10 sub-chapter category
+
+::: {#tbl-cidg}
+```{r}
+make_tbl_cidg <- function(dat_in, no_indet = F, hl_subchapters = F){
+  # A4 210 x 297 mm
+  
+  if(no_indet == TRUE){
+    dat_in[, dg := dg %>% str_remove("€€")]
+  }
+  if(hl_subchapters == T){
+    dat_in[dg %in% dgs_tbl[dg %in% c("first", paste0("f", seq(0,9))), labs], dg := paste0("**", dg, "**")]
+  }
+    
+dat_in %>% 
+  .[dg %in%  dgs_tbl[dg %in% c("first_no_f0"), labs], `:=`(dg = paste0("*", dg, "*"))] %>% 
+    purrr::modify_if(is.factor, as.character) %>%
+  flextable() %>% 
+  set_header_labels(
+    values = list(
+      dg = labs_tbls$dg,
+    Men_25 = labs_tbls$a25,
+    Men_50 = labs_tbls$a50,
+    Men_75 = labs_tbls$a75,
+    Men_100 = labs_tbls$a100,
+    Men_101 = labs_tbls$aoo,
+    Women_25 = labs_tbls$a25,
+    Women_50 = labs_tbls$a50,
+    Women_75 = labs_tbls$a75,
+    Women_100 = labs_tbls$a100,
+    Women_101 = labs_tbls$aoo,
+    w_to_m = ""
+    )) %>% 
+#  padding(i = ~ dg %in% dgs_tbl[subgr == T, labs], j= "dg", padding.left=20) %>% 
+    add_header_row(values = c("", labs_tbls$women, labs_tbls$men, ""), colwidths = c(1, 5, 5, 1)) %>% 
+    add_header_row(values = c("", labs_tbls$ci_title, paste0(labs_tbls$w_to_m, "^a^")), colwidths = c(1,10,1)) %>% 
+  add_footer_lines(value = as_paragraph(as_sup("a"), labs_tbls$w_to_m_footnote)) %>% 
+  theme_box() %>% 
+    colformat_md(part = "all")
+}
+
+make_tbl_cidg_data() %>% make_tbl_cidg(no_indet = T)  %>% fit_table(landscaple = T)
+```
+:::
+:::
+
+\newpage
+
+### @tbl-prevalAgegr: 12-month service utilization for medical contacts with diagnosed mental disorders by gender, age group, and type of contact in `r pr_year`^a^
+
+::: {#tbl-prevalAgegr}
+```{r}
+tbl_preval_agegr %>% copy() %>% .[dg == "any"] %>% 
+  #.[,agegr := factor(agegr, levels = c("0–24", "25–44", "45–64", "65–84", "85–99", "0–99"))] %>% 
+  .[, sample := factor(sample, levels = labs_lst$sample$val, labels = labs_lst$sample$lab)] %>% 
+  .[, sukup := factor(sukup, levels = labs_lst$sukup[order(ord1), val], labels = labs_lst$sukup[order(ord1), lab])] %>%
+  .[, val := paste0(numb(n, n_decim = 0), " (", numb(pros), ")")] %>% 
+  dcast(sample+sukup~agegr, value.var = "val") %>% 
+  as_grouped_data(groups = "sample",) %>% 
+  as_flextable(hide_grouplabel = TRUE) %>% 
+  colformat_double(big.mark = numb_in$big_mark, decimal.mark = numb_in$decim_mark, digits = 2) %>% 
+  autofit() %>% 
+    theme_box() %>% 
+  add_header_row(values = c("", labs_tbls$n_pr_title), colwidths = c(1, tbl_preval_agegr[, uniqueN(agegr)])) %>% 
+  set_header_labels(
+    values = list(
+      sukup = "")) %>% 
+  add_footer_lines(value = as_paragraph(as_sup("a"), labs_tbls$pr_footnote)) %>% 
+  colformat_md(part = "all") %>% 
+  fit_table() -> tbl
+
+tbl
+```
+:::
+
+\newpage
+
+## Figures
+
+### @fig-mainresults: Cumulative incidence, incidence rate, and 12-month service utilization^a^ of mental disorders by gender and treatment type
+
+::: {#fig-mainresults}
+```{r}
+#| fig-width: 8
+#| fig-height: 9.5
+
+(fig_mr$a+fig_mr$b) /(fig_mr$c+fig_mr$d) / (fig_mr$e+fig_mr$f) +  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
+
+```
+:::
+
+^a^ `r labs_tbls$pr_footnote`
+
+\newpage
+
+### @fig-dg1: Cumulative incidence, incidence rate, and 12-month service utilization^a^ of mental disorders by gender and diagnosis
+
+```{r}
+#| label: fig-dg1
+#| fig-width: 9.1
+#| fig-height: 8
+
+fig_dgs$part1
+```
+
+^a^ `r labs_tbls$pr_footnote`
+
+### @fig-dg2: Cumulative incidence, incidence rate, and 12-month service utilization^a^ of mental disorders by gender and diagnosis
+
+```{r}
+#| label: fig-dg2
+#| fig-width: 9.1
+#| fig-height: 8
+
+fig_dgs$part2
+```
+
+^a^ `r labs_tbls$pr_footnote`
+
+### @fig-dg3: Cumulative incidence, incidence rate, and 12-month service utilization^a^ of mental disorders by gender and diagnosis
+
+```{r}
+#| label: fig-dg3
+#| fig-width: 9.1
+#| fig-height: 8
+
+fig_dgs$part3 
+```
+
+^a^ `r labs_tbls$pr_footnote`
+
+\newpage
+
+# Extended Data
+
+::: landscape
+### @exttbl-descriptive: Diagnostic classification of mental disorders according to the ICD–10, earliest possible age of onset, and the counts of cases and person-years included in the follow-up, and count of persons at risk at the start of the follow-up by gender
+
+::: {#exttbl-descriptive}
+```{r}
+d <- datlist_incidence$descriptives$all %>% .[dg %in% dgs_tbl[specific_dgs == 1, dg] | dg %in% c("f_any", "f_any_no_f0", "f00_f03", "f04_f09")] %>% 
+  .[dgs_tbl, on ="dg", c("min_age") := .(i.min_age)] %>% 
+  .[, min_age := min_age %>% as.character()] %>% 
+  .[dg %in% c("f_any", "f_any_no_f0"), `:=`(min_age = "NA")] %>% 
+  .[dg %in% c("f_any", paste0("f", seq(0,9))), dg_lab := paste0("**", dg_lab, "**")] %>% 
+  .[dg %in% c("f_any_no_f0"), `:=`(dg_lab = paste0("*", dg_lab, "*"))] %>% 
+  .[, .(dg, dg_lab, min_age, Women_N, `Women_Person years`, Women_Diagnosis, Men_N, `Men_Person years`, Men_Diagnosis)]
+
+  # FILL NA 
+cols <- names(d)
+d[, (cols) := replace(.SD, is.na(.SD), "NA"), .SDcols = cols]
+
+d[, dg_lab := dg_lab %>% str_remove("€€")]
+
+d[, -c("dg")] %>% flextable() %>% 
+   set_header_labels(
+    values = list(
+      dg_lab = labs_tbls$dg,
+      min_age = labs_tbls$min_age,
+      Women_N = labs_tbls$n_indiv,
+      `Women_Person years` = labs_tbls$n_py,
+      Women_Diagnosis = labs_tbls$n_cases,
+      Men_N = labs_tbls$n_indiv,
+      `Men_Person years` = labs_tbls$n_py,
+      Men_Diagnosis = labs_tbls$n_cases
+    )) %>% 
+      add_header_row(values = c("", labs_tbls$women, labs_tbls$men), colwidths = c(2, 3, 3)) %>% 
+  #add_header_row(values = c("", labs_tbls$ci_title), colwidths = c(2,6)) %>% 
+  theme_box() %>% 
+  colformat_double(big.mark = numb_in$big_mark, decimal.mark = numb_in$decim_mark, digits = 0) %>% 
+  colformat_md() %>% 
+  fit_table(landscaple = T, supplement = T) -> tbl
+
+tbl
+```
+:::
+
+:::
+
+### @extfig-washout: Example timelines in the main analysis and in sensitivity analyses with additional washout periods
+
+::: {#extfig-washout}
+```{r}
+#| fig-width: 7
+#| fig-height: 10
+
+fig_washout()
+```
+:::
+
+The procedures to differentiate incident cases from prevalent cases
+demonstrated. Solid black lines indicate person-time in the study at
+risk for truly incident cases. Red lines indicate person-time in the
+study where participants had previous treatments before the start of the
+washout period and were incorrectly included. Dashed lines indicate
+person-time that is not included in the study. Complete washout
+indicates the washout period including inpatient, outpatient and primary
+care treatments simultaneously.
+
+**Panel A** demonstrates the main analysis, in which we excluded
+disorder-specific prevalent cases at the start of the follow-up period.
+This exclusion included individuals with inpatient treatments between
+1975 and 1999, as well as those with outpatient care between 1998 and
+1999.
+
+**Panel B** demonstrates the sensitivity analysis with an additional
+three-year washout period and a retrospective washout for primary care.
+In this analysis, we shortened the study period from
+`r tms$start`–`r tms$end` to `r tms$sens1_start`–`r tms$end`,
+incorporating an extra one-year washout for primary care. This approach
+aligns the washout procedure with that of a previous Danish study, where
+medication use served as a proxy for primary care
+contacts[@kessing2023]. While this method is stricter in excluding
+prevalent cases, it introduces immortal time bias. In the Danish study,
+estimates of lifetime risk for mental disorders with additional 5- and
+10-year washout periods were reported, with the estimates decreasing by
+only 0.6 and 2.0 percentage points, respectively.
+
+**Panel C** demonstrates the sensitivity analysis with a further
+restricted follow-up period. In this analysis, we shortened the study
+period from`r tms$start`–`r tms$end` to `r tms$sens2_start`–`r tms$end`.
+The washout period for inpatient care is
+`r tms$inpat`–`r tms$sens2_start-1`, for outpatient secondary care
+`r tms$outpat`–`r tms$sens2_start-1`, and for primary care the year
+`r tms$prim`. This scenario avoids introducing immortal time bias but
+limits the overall time span captured in the study.
+
+The following example timelines are presented:
+
+Person 1 has his/her first inpatient admission during the study period,
+with no prior outpatient or primary care mental health treatments, and
+is therefore correctly identified as an incident case.
+
+Person 2 has his/her first psychiatric outpatient contact during the
+study period, with no prior inpatient or primary care mental health
+treatments, and is likewise correctly identified as an incident case.
+
+Person 3 has his/her first contact with primary care mental health
+services in `r tms$prim` or later, with no prior inpatient or secondary
+care mental health treatments, and is thus correctly identified as an
+incident case.
+
+Person 4 contributes to the risk of experiencing a mental disorder until
+he/she dies or emigrates from Finland.
+
+Person 5 contributes to the risk of experiencing a mental disorder until
+the end of the study period.
+
+Person 6 had his/her first inpatient admission before the launch of
+inpatient data in the register (`r tms$inpat`). Consequently, he/she
+enters the study incorrectly and contributes to the risk of an incident
+mental disorder. In this case, he/she has an inpatient admission during
+the study period that is misclassified as an incident event.
+
+Person 7 had his/her first inpatient admission before the launch of
+inpatient data in the register (`r tms$inpat`) and a psychiatric
+secondary care outpatient treatment before the launch of outpatient data
+in the register (`r tms$outpat`). Thus, he/she enters the study
+incorrectly and contributes to the risk of an incident mental disorder.
+In this example, he/she has an outpatient contact during the study
+period that is misclassified as an incident event.
+
+Person 8 had his/her first inpatient admission before the launch of
+inpatient data in the register (`r tms$inpat`), a psychiatric secondary
+care outpatient treatment before the launch of outpatient data in the
+register (`r tms$outpat`), and a primary care mental health contact
+before the launch of primary care data in the register (`r tms$prim`).
+Therefore, he/she enters the study incorrectly and contributes to the
+risk of an incident mental disorder. In this case, he/she has a primary
+care mental health contact in `r tms$prim` or later and is misclassified
+as an incident event.
+
+Persons 9 and 10 are examples of individuals who had inpatient care
+between `r tms$inpat` and `r tms$start -1` or secondary outpatient care
+between `r tms$outpat` and `r tms$start -1`, and are correctly excluded
+from the study population.
+
+Person 11 has his/her first contact with primary care mental health
+services in `r tms$prim` and demonstrates the additional primary care
+washout in the sensitivity analyses.
+
+# Supplementary Information
+
+\newpage
+
+::: landscape
+### @supptbl-cidgESH: Cumulative incidence of mental disorders in psychiatric secondary care at the ages of 25, 50, 75, and 100 years, and median age of onset (AOO) and interquartile range (IQR) by gender and ICD–10 sub-chapter category
+
+::: {#supptbl-cidgESH}
+```{r}
+make_tbl_cidg_data(sample_in = "esh") %>% make_tbl_cidg(no_indet = T) %>% fit_table(landscaple = T, supplement = T)
+```
+:::
+
+:::
+
+::: landscape
+### @supptbl-cidgINPAT: Cumulative incidence of diagnosed mental disorders in psychiatric inpatient care at the ages of 25, 50, 75, and 100 years, and median age of onset (AOO) and interquartile range (IQR) by gender and ICD–10 sub-chapter category
+
+::: {#supptbl-cidgINPAT}
+```{r}
+make_tbl_cidg_data(sample_in = "inpat") %>% make_tbl_cidg(no_indet = T) %>% fit_table(landscaple = T, supplement =  T)
+```
+:::
+
+:::
+
+::: landscape
+### @supptbl-cidg-alldgs: Cumulative incidence of mental disorders at the ages of 25, 50, 75, and 100 years, and median age of onset (AOO) and interquartile range (IQR) by gender and diagnosis
+
+::: {#supptbl-cidg-alldgs}
+```{r}
+make_tbl_cidg_data(dgs_in = dgs_tbl[specific_dgs == 1, dg]) %>% make_tbl_cidg(no_indet = T, hl_subchapters = T)  %>% fit_table(landscaple = T, supplement = T)
+```
+:::
+
+:::
+
+### @suppfig-cicomparedg: Cumulative incidence of mental disorders by gender and ICD–10 sub-chapter category
+
+::: {#suppfig-cicomparedg}
+```{r}
+#| fig-width: 7.5
+#| fig-height: 7
+
+fig_compare_dgs$ci
+```
+:::
+
+\newpage
+
+::: landscape
+### @supptbl-prevalAgegr-alldg: 12-month service utilization for medical contacts with diagnosed mental disorders by gender, age group, and diagnosis in `r pr_year`^a^
+
+::: {#supptbl-prevalAgegr-alldg}
+```{r, missa}
+d <- tbl_preval_agegr %>% copy() %>% .[sample == "all"] %>% 
+  #.[,agegr := factor(agegr, levels = c("0–24", "25–44", "45–64", "65–84", "85–99", "0–99"))] %>% 
+  .[, sample := factor(sample, levels = labs_lst$sample$val, labels = labs_lst$sample$lab)] %>% 
+  .[, sukup := factor(sukup, levels = labs_lst$sukup[order(ord1), val], labels = labs_lst$sukup[order(ord1), lab])] %>%
+  .[, val := paste0(numb(n, n_decim = 0), " (", numb(pros), ")")] %>% 
+  dcast(dg~sukup+agegr, value.var = "val")
+
+d %<>% 
+#  .[dg %in% dgs_in] %>%
+  .[dgs_tbl, on = "dg", dg := i.labs] %>% 
+  .[dg %in% dgs_tbl[subgr == T, labs], dg := paste0("€€", dg)] 
+
+d[dg %in%  dgs_tbl[dg %in% c("any_no_f0"), labs], `:=`(dg = paste0("*", dg, "*"))]
+
+d[, dg := dg %>% str_remove("€€")]
+d[dg %in% dgs_tbl[dg %in% c("first", paste0("f", seq(0,9))), labs], dg := paste0("**", dg, "**")]  
+
+
+d %>% flextable() %>% 
+  colformat_double(big.mark = numb_in$big_mark, decimal.mark = numb_in$decim_mark, digits = 2) %>% 
+  set_header_df(mapping = data.frame(keys = d %>% names(), values = d %>% names() %>% word(2, sep = "_"), stringsAsFactors = FALSE), key = "keys" ) %>% 
+  autofit() %>% 
+  theme_box() %>%  
+  add_header_row(values = c("", labs_tbls$women, labs_tbls$men), colwidths = c(1, 5, 5)) %>% 
+  add_header_row(values = c("", labs_tbls$n_pr_title), colwidths = c(1, tbl_preval_agegr[, uniqueN(agegr)]*2)) %>% 
+    add_footer_lines(value = as_paragraph(as_sup("a"), labs_tbls$pr_footnote)) %>% 
+  colformat_md() %>% 
+  fit_table(landscaple = T, supplement = T) -> tbl
+
+tbl
+```
+:::
+
+:::
