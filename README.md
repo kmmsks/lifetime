@@ -27,4 +27,7 @@ The procedure to reproduce figures and tables of the study:
 5.  Knitr the document `1_tables_figures.qmd` to produce tables and figures
 
 
+Version: 0.0.1-submitted (2024-11-11)
+
+
 Regarding the interactive online material at <https://mentalnet.shinyapps.io/lifetime/>, see <https://github.com/kmmsks/ci_interactive>
