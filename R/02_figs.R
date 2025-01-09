@@ -93,7 +93,10 @@ fig_dgs_part <- function(dat_in, dg_in, sukup_in, part_in, ymax_in = NA, show_er
     xlim(c(0, 100))+
     scale_color_nejm()+
     scale_fill_nejm(guide = "none")+
-    theme(plot.subtitle = element_textbox_simple(halign = .05))
+    theme(plot.subtitle = element_textbox_simple(halign = .5, margin = margin(b=2)),
+          plot.title = element_text(margin = margin(b=8)),
+          legend.margin=margin(t = 0, b = 0, unit='cm')
+          )
 }
 
 # see the occurence of different diagnoses for ordering (manually)
@@ -189,9 +192,15 @@ fig_compare_dgs$ir <- (draw_compare_dgs_part(fig_dat_mr$ir, sukup_in = 2, ymax_i
 
 # SAVE figures -----------------------------------------------------------------
 
-((fig_mr$a+fig_mr$b) /(fig_mr$c+fig_mr$d) / (fig_mr$e+fig_mr$f) +  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')) %>%
-  ggsave(here("figs", "fig1.pdf"), plot = ., device = "pdf", dpi = 600, width = 9.1, height = 8)
+w <- 175
+h <- 150
+devi <- "tiff"
+dpi <- 1200
+unit <- "mm"
 
-fig_dgs$part1 %>% ggsave(here("figs", "fig2.pdf"), plot = ., device = "pdf", dpi = 600, width = 9.1, height = 8)
-fig_dgs$part2 %>% ggsave(here("figs", "fig3.pdf"), plot = ., device = "pdf", dpi = 600, width = 9.1, height = 8)
-fig_dgs$part3 %>% ggsave(here("figs", "fig4.pdf"), plot = ., device = "pdf", dpi = 600, width = 9.1, height = 8)
+((fig_mr$a+fig_mr$b) /(fig_mr$c+fig_mr$d) / (fig_mr$e+fig_mr$f) +  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')) %>%
+  ggsave(here("figs", "fig1.tif"), plot = ., device = devi, dpi = dpi, width = w, height = h, units = unit, compression = "lzw")
+
+fig_dgs$part1 %>% ggsave(here("figs", "fig2.tif"), plot = ., device = devi, dpi = dpi, width = w, height = h, units = unit, compression = "lzw")
+fig_dgs$part2 %>% ggsave(here("figs", "fig3.tif"), plot = ., device = devi, dpi = dpi, width = w, height = h, units = unit, compression = "lzw")
+fig_dgs$part3 %>% ggsave(here("figs", "fig4.tif"), plot = ., device = devi, dpi = dpi, width = w, height = h, units = unit, compression = "lzw")

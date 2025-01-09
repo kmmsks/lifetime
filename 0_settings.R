@@ -73,8 +73,8 @@ fit_table <- function(tbl_in, landscaple = FALSE, margin_mm = 20, page = "A4", s
     out %<>% fontsize(size = 10, part = "all")
   } else {
     out %<>% 
-      fontsize(size = 8, part = "header") %>%
-      fontsize(size = 8, part = "body") %>% 
+      fontsize(size = 10, part = "header") %>%
+      fontsize(size = 10, part = "body") %>% 
       fontsize(size = 10, part = "footer") %>% 
       font(fontname = "Times", part = "all")
   }
@@ -84,8 +84,17 @@ fit_table <- function(tbl_in, landscaple = FALSE, margin_mm = 20, page = "A4", s
 
 
 ## GGPLOT theme -----
-theme_set(theme_classic(base_size = 10)+ theme(
-  panel.grid.major.y = element_line(colour = "gray90")))
+font_size <- 8
+font_fam <- "sans"
+theme_set(theme_classic(base_size = font_size)+ theme(
+  panel.grid.major.y = element_line(colour = "gray90"),
+  text =           element_text(family = font_fam),
+  axis.text =      element_text(size = font_size, family = font_fam),
+  axis.title =     element_text(size = font_size, family = font_fam),
+  plot.title =     element_text(size = font_size, family = font_fam),
+  plot.subtitle =  element_text(size = font_size, family = font_fam),
+  legend.text =    element_text(size = font_size, family = font_fam)
+  ))
 
 
 # Settings, labels etc ---------------------------------------------------------
